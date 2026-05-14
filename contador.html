@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contadores con teclas y timer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 16px;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    .app {
+      max-width: 950px;
+      margin: auto;
+    }
+
+    .panel {
+      background: #1b1b1b;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 90px auto;
+      gap: 8px;
+    }
+
+    input, button, select {
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      padding: 10px;
+    }
+
+    input, select {
+      background: #0f0f0f;
+      color: #eee;
+    }
+
+    button {
+      background: #2d2d2d;
+      color: #eee;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    button:hover {
+      background: #3a3a3a;
+    }
+
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .timer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .timer-display {
+      font-size: 46px;
+      font-weight: 900;
+      text-align: center;
+      margin: 14px 0;
+      letter-spacing: 1px;
+    }
+
+    .timer-status {
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      min-height: 22px;
+    }
+
+    .counter-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .counter {
+      background: #1c1c1c;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      position: relative;
+    }
+
+    .counter-main {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 44px;
+    }
+
+    .counter-title {
+      font-size: 20px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .counter-meta {
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .counter-value {
+      font-size: 42px;
+      font-weight: 800;
+      text-align: center;
+      min-width: 90px;
+    }
+
+    .counter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .order-buttons {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .order-buttons button {
+      width: 34px;
+      height: 30px;
+      padding: 0;
+      font-size: 17px;
+      border-radius: 8px;
+      line-height: 1;
+      background: #252525;
+    }
+
+    .plus {
+      background: #174f2a;
+    }
+
+    .minus {
+      background: #5a1d1d;
+    }
+
+    .reset {
+      background: #4a3c12;
+    }
+
+    .delete {
+      background: #551616;
+    }
+
+    .start {
+      background: #174f2a;
+    }
+
+    .pause {
+      background: #4a3c12;
+    }
+
+    .danger {
+      background: #5a1d1d;
+    }
+
+    .small {
+      font-size: 14px;
+      padding: 7px 9px;
+    }
+
+    .hint {
+      color: #aaa;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .empty {
+      color: #888;
+      text-align: center;
+      padding: 30px;
+      border: 1px dashed #444;
+      border-radius: 16px;
+    }
+
+    .holding {
+      outline: 2px solid #aaa;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.08);
+    }
+
+    @media (max-width: 700px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .timer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .timer-grid button {
+        width: 100%;
+      }
+
+      .counter {
+        grid-template-columns: 1fr;
+      }
+
+      .counter-main {
+        padding-right: 44px;
+      }
+
+      .counter-value {
+        text-align: left;
+      }
+
+      .counter-actions button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+    <h1>Contadores con teclas + timer</h1>
+
+    <div class="panel">
+      <h2>Timer con alarma</h2>
+
+      <div class="timer-display" id="timerDisplay">00:00</div>
+
+      <div class="timer-grid">
+        <input id="timerMinutes" type="number" min="0" value="5" placeholder="Minutos">
+        <input id="timerSeconds" type="number" min="0" max="59" value="0" placeholder="Segundos">
+        <button class="start" onclick="startTimer()">Iniciar</button>
+        <button class="pause" onclick="pauseTimer()">Pausar</button>
+        <button onclick="resetTimer()">Reset</button>
+      </div>
+
+      <div class="timer-status" id="timerStatus">
+        Configurá minutos y segundos. Cuando llega a cero suena alarma.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="form-grid">
+        <input id="counterName" placeholder="Nombre del contador, ej: vueltas, errores, riffs..." />
+        <input id="counterKey" maxlength="1" placeholder="Tecla" />
+        <button onclick="addCounter()">Crear contador</button>
+      </div>
+
+      <p class="hint">
+        Tocá la tecla asignada para sumar.
+        Si la mantenés apretada 3 segundos, ese contador se reinicia sin preguntar.
+        También podés sumar, restar y ordenar los contadores con las flechas.
+      </p>
+    </div>
+
+    <div id="counterList" class="counter-list"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "mis_contadores_teclas_timer_v2";
+    const TIMER_STORAGE_KEY = "mi_timer_config_v1";
+    const HOLD_RESET_MS = 3000;
+
+    let counters = loadCounters();
+
+    let pressedKeys = {};
+    let holdTimers = {};
+    let holdingCounterId = null;
+
+    let timerInterval = null;
+    let timerRemaining = 0;
+    let timerRunning = false;
+
+    function loadCounters() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCounters() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(counters));
+    }
+
+    function loadTimerConfig() {
+      try {
+        const data = JSON.parse(localStorage.getItem(TIMER_STORAGE_KEY));
+        if (!data) return;
+
+        document.getElementById("timerMinutes").value = data.minutes ?? 5;
+        document.getElementById("timerSeconds").value = data.seconds ?? 0;
+
+        timerRemaining = getConfiguredTimerSeconds();
+        renderTimer();
+      } catch {}
+    }
+
+    function saveTimerConfig() {
+      const minutes = Number(document.getElementById("timerMinutes").value) || 0;
+      const seconds = Number(document.getElementById("timerSeconds").value) || 0;
+
+      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({
+        minutes,
+        seconds
+      }));
+    }
+
+    function normalizeKey(key) {
+      return String(key || "").trim().toLowerCase();
+    }
+
+    function addCounter() {
+      const nameInput = document.getElementById("counterName");
+      const keyInput = document.getElementById("counterKey");
+
+      const name = nameInput.value.trim();
+      const key = normalizeKey(keyInput.value);
+
+      if (!name) {
+        alert("Poné un nombre para el contador.");
+        return;
+      }
+
+      if (!key) {
+        alert("Asignale una tecla.");
+        return;
+      }
+
+      const keyExists = counters.some(c => c.key === key);
+
+      if (keyExists) {
+        alert("Esa tecla ya está asignada a otro contador.");
+        return;
+      }
+
+      counters.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + "_" + Math.random(),
+        name,
+        key,
+        value: 0,
+        createdAt: new Date().toLocaleString()
+      });
+
+      nameInput.value = "";
+      keyInput.value = "";
+
+      saveCounters();
+      renderCounters();
+    }
+
+    function incrementCounter(id) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      counter.value++;
+      saveCounters();
+      renderCounters();
+    }
+
+    function decrementCounter(id) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      counter.value--;
+      saveCounters();
+      renderCounters();
+    }
+
+    function resetCounter(id, ask = true) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      if (ask) {
+        if (!confirm(`¿Resetear "${counter.name}" a 0?`)) return;
+      }
+
+      counter.value = 0;
+      saveCounters();
+
+      holdingCounterId = null;
+      renderCounters();
+    }
+
+    function deleteCounter(id) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      if (!confirm(`¿Borrar el contador "${counter.name}"?`)) return;
+
+      counters = counters.filter(c => c.id !== id);
+      saveCounters();
+      renderCounters();
+    }
+
+    function renameCounter(id) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      const newName = prompt("Nuevo nombre:", counter.name);
+      if (!newName || !newName.trim()) return;
+
+      counter.name = newName.trim();
+      saveCounters();
+      renderCounters();
+    }
+
+    function changeKey(id) {
+      const counter = counters.find(c => c.id === id);
+      if (!counter) return;
+
+      const newKey = normalizeKey(prompt("Nueva tecla:", counter.key));
+      if (!newKey) return;
+
+      const keyExists = counters.some(c => c.key === newKey && c.id !== id);
+
+      if (keyExists) {
+        alert("Esa tecla ya está usada por otro contador.");
+        return;
+      }
+
+      counter.key = newKey;
+      saveCounters();
+      renderCounters();
+    }
+
+    function moveCounterUp(index) {
+      if (index <= 0) return;
+
+      const temp = counters[index - 1];
+      counters[index - 1] = counters[index];
+      counters[index] = temp;
+
+      saveCounters();
+      renderCounters();
+    }
+
+    function moveCounterDown(index) {
+      if (index >= counters.length - 1) return;
+
+      const temp = counters[index + 1];
+      counters[index + 1] = counters[index];
+      counters[index] = temp;
+
+      saveCounters();
+      renderCounters();
+    }
+
+    function renderCounters() {
+      const list = document.getElementById("counterList");
+
+      if (counters.length === 0) {
+        list.innerHTML = `<div class="empty">Todavía no hay contadores. Creá uno arriba.</div>`;
+        return;
+      }
+
+      list.innerHTML = counters.map((counter, index) => {
+        const holdClass = counter.id === holdingCounterId ? "holding" : "";
+        const disableUp = index === 0 ? "disabled" : "";
+        const disableDown = index === counters.length - 1 ? "disabled" : "";
+
+        return `
+          <div class="counter ${holdClass}">
+            <div class="order-buttons">
+              <button onclick="moveCounterUp(${index})" ${disableUp} title="Subir">↑</button>
+              <button onclick="moveCounterDown(${index})" ${disableDown} title="Bajar">↓</button>
+            </div>
+
+            <div class="counter-main">
+              <div class="counter-title">${escapeHtml(counter.name)}</div>
+              <div class="counter-meta">
+                Tecla: <strong>${escapeHtml(counter.key)}</strong>
+                · Mantener 3s = reset directo
+                · Creado: ${escapeHtml(counter.createdAt || "")}
+              </div>
+
+              <div class="counter-actions">
+                <button class="plus" onclick="incrementCounter('${counter.id}')">+1</button>
+                <button class="minus" onclick="decrementCounter('${counter.id}')">-1</button>
+                <button class="reset small" onclick="resetCounter('${counter.id}', true)">Reset</button>
+                <button class="small" onclick="renameCounter('${counter.id}')">Renombrar</button>
+                <button class="small" onclick="changeKey('${counter.id}')">Cambiar tecla</button>
+                <button class="delete small" onclick="deleteCounter('${counter.id}')">Borrar</button>
+              </div>
+            </div>
+
+            <div class="counter-value">${counter.value}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    document.addEventListener("keydown", function(event) {
+      const active = document.activeElement;
+
+      const isTyping =
+        active &&
+        (
+          active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.isContentEditable
+        );
+
+      if (isTyping) return;
+
+      const pressedKey = normalizeKey(event.key);
+      const counter = counters.find(c => c.key === pressedKey);
+
+      if (!counter) return;
+
+      event.preventDefault();
+
+      if (pressedKeys[pressedKey]) {
+        return;
+      }
+
+      pressedKeys[pressedKey] = true;
+
+      counter.value++;
+      saveCounters();
+
+      holdingCounterId = counter.id;
+      renderCounters();
+
+      holdTimers[pressedKey] = setTimeout(() => {
+        resetCounter(counter.id, false);
+        playShortBeep();
+        document.getElementById("timerStatus").textContent =
+          `Contador "${counter.name}" reiniciado por mantener tecla ${counter.key}.`;
+      }, HOLD_RESET_MS);
+    });
+
+    document.addEventListener("keyup", function(event) {
+      const releasedKey = normalizeKey(event.key);
+
+      pressedKeys[releasedKey] = false;
+
+      if (holdTimers[releasedKey]) {
+        clearTimeout(holdTimers[releasedKey]);
+        delete holdTimers[releasedKey];
+      }
+
+      holdingCounterId = null;
+      renderCounters();
+    });
+
+    document.getElementById("counterKey").addEventListener("keydown", function(event) {
+      event.preventDefault();
+
+      if (event.key.length === 1) {
+        this.value = event.key.toLowerCase();
+      }
+    });
+
+    function getConfiguredTimerSeconds() {
+      let minutes = Number(document.getElementById("timerMinutes").value) || 0;
+      let seconds = Number(document.getElementById("timerSeconds").value) || 0;
+
+      if (seconds > 59) seconds = 59;
+      if (seconds < 0) seconds = 0;
+      if (minutes < 0) minutes = 0;
+
+      document.getElementById("timerSeconds").value = seconds;
+      document.getElementById("timerMinutes").value = minutes;
+
+      return minutes * 60 + seconds;
+    }
+
+    function renderTimer() {
+      const display = document.getElementById("timerDisplay");
+
+      const minutes = Math.floor(timerRemaining / 60);
+      const seconds = timerRemaining % 60;
+
+      display.textContent =
+        String(minutes).padStart(2, "0") +
+        ":" +
+        String(seconds).padStart(2, "0");
+    }
+
+    function startTimer() {
+      saveTimerConfig();
+
+      if (!timerRunning) {
+        if (timerRemaining <= 0) {
+          timerRemaining = getConfiguredTimerSeconds();
+        }
+
+        if (timerRemaining <= 0) {
+          alert("Configurá un tiempo mayor a 0.");
+          return;
+        }
+
+        timerRunning = true;
+        document.getElementById("timerStatus").textContent = "Timer corriendo.";
+
+        timerInterval = setInterval(() => {
+          timerRemaining--;
+          renderTimer();
+
+          if (timerRemaining <= 0) {
+            finishTimer();
+          }
+        }, 1000);
+
+        renderTimer();
+      }
+    }
+
+    function pauseTimer() {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      document.getElementById("timerStatus").textContent = "Timer pausado.";
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerRemaining = getConfiguredTimerSeconds();
+      renderTimer();
+
+      document.getElementById("timerStatus").textContent = "Timer reseteado.";
+    }
+
+    function finishTimer() {
+      pauseTimer();
+      timerRemaining = 0;
+      renderTimer();
+
+      document.getElementById("timerStatus").textContent = "Tiempo terminado.";
+      playAlarm();
+    }
+
+    function playAlarm() {
+      playTone(880, 0.18);
+      setTimeout(() => playTone(660, 0.18), 220);
+      setTimeout(() => playTone(880, 0.18), 440);
+      setTimeout(() => playTone(660, 0.18), 660);
+      setTimeout(() => playTone(990, 0.35), 880);
+    }
+
+    function playShortBeep() {
+      playTone(520, 0.12);
+    }
+
+    function playTone(frequency = 440, duration = 0.2) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.value = frequency;
+
+        gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duration + 0.03);
+      } catch (e) {
+        console.log("No se pudo reproducir sonido:", e);
+      }
+    }
+
+    document.getElementById("timerMinutes").addEventListener("change", () => {
+      saveTimerConfig();
+      if (!timerRunning) {
+        timerRemaining = getConfiguredTimerSeconds();
+        renderTimer();
+      }
+    });
+
+    document.getElementById("timerSeconds").addEventListener("change", () => {
+      saveTimerConfig();
+      if (!timerRunning) {
+        timerRemaining = getConfiguredTimerSeconds();
+        renderTimer();
+      }
+    });
+
+    loadTimerConfig();
+
+    if (timerRemaining <= 0) {
+      timerRemaining = getConfiguredTimerSeconds();
+    }
+
+    renderTimer();
+    renderCounters();
+  </script>
+
+</body>
+</html>
